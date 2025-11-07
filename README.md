@@ -1,6 +1,6 @@
-## Merchant Analytics Dashboard (Vue 3 + Spring Boot)
+## Seller Analytics Dashboard (Vue 3 + Spring Boot)
 
-Performance analytics dashboard for Amazon-style merchants. Modern Vue 3 frontend with Vite consumes a Spring Boot REST API backed by PostgreSQL. The backend implements intelligent caching, and the UI provides real-time alerts based on sales trends and return rates.
+Performance analytics dashboard for Amazon-style sellers. Modern Vue 3 frontend with Vite consumes a Spring Boot REST API backed by PostgreSQL. The backend implements intelligent caching, and the UI provides real-time alerts based on sales trends and return rates.
 
 ### What's here
 - **Frontend**: `frontend/` — Vue 3 application with Vite, Axios, and composables architecture. Proxies `/api` requests to the backend.
@@ -17,12 +17,13 @@ frontend/src/
 │   ├── config/          # API configuration constants
 │   ├── core/            # HTTP client, error handling
 │   └── services/        # Business logic services
+│       └── sellerDataService.js
 ├── components/          # Vue components
-│   ├── MerchantSelector.vue
+│   ├── SellerSelector.vue
 │   ├── PerformanceMetrics.vue
 │   └── NotificationPanel.vue
 ├── composables/         # Reusable composition functions
-│   ├── useMerchantData.js
+│   ├── useSellerData.js
 │   └── useDateTime.js
 └── views/
     └── AnalyticsView.vue
@@ -32,18 +33,18 @@ frontend/src/
 ```
 backend/src/main/java/com/example/backend/
 ├── controller/
-│   ├── MerchantController.java
+│   ├── SellerController.java
 │   └── advice/
 │       └── GlobalExceptionHandler.java
 ├── service/
-│   └── MerchantService.java
+│   └── SellerService.java
 ├── repository/
-│   └── MerchantRepository.java
+│   └── SellerRepository.java
 ├── dto/
-│   ├── MerchantSummaryResponse.java
+│   ├── SellerSummaryResponse.java
 │   └── ErrorResponse.java
 ├── exception/
-│   └── MerchantNotFoundException.java
+│   └── SellerNotFoundException.java
 └── config/
     └── AlertConstants.java
 ```
@@ -65,6 +66,7 @@ createdb demo_db
 createuser -P demo_user
 # set password: demo_pass
 psql -d demo_db -U demo_user -c "GRANT ALL PRIVILEGES ON DATABASE demo_db TO demo_user;"
+psql -d demo_db -U demo_user -c "GRANT CREATE ON SCHEMA public TO demo_user;"
 ```
 
 2. **Seed sample data**:
@@ -96,9 +98,9 @@ npm run dev
 
 ### Caching Strategy (Backend)
 - Enabled via `@EnableCaching` in `BackendApiApplication.java`
-- `@Cacheable(cacheNames = "merchantSummary", key = "#id")` on `GET /api/seller/{id}/summary` endpoint
+- `@Cacheable(cacheNames = "sellerSummary", key = "#id")` on `GET /api/seller/{id}/summary` endpoint
 - Caffeine cache configured in `application.properties`: `spring.cache.caffeine.spec=expireAfterWrite=30s`
-- **Effect**: Repeated requests for the same merchant ID within 30 seconds are served from cache, reducing database load
+- **Effect**: Repeated requests for the same seller ID within 30 seconds are served from cache, reducing database load
 
 ### Alert Generation Logic (Backend)
 - SQL aggregates sales data comparing this week vs. last week
@@ -110,9 +112,9 @@ npm run dev
 
 ### Frontend Architecture
 - **API Client**: Modular HTTP client with interceptors, retry logic, and error handling
-- **Composables**: Reusable logic for data fetching (`useMerchantData`) and date formatting (`useDateTime`)
+- **Composables**: Reusable logic for data fetching (`useSellerData`) and date formatting (`useDateTime`)
 - **Components**: 
-  - `MerchantSelector` - Dropdown for merchant selection
+  - `SellerSelector` - Dropdown for seller selection
   - `PerformanceMetrics` - Displays sales, revenue, and return rate metrics
   - `NotificationPanel` - Shows system alerts with severity-based styling
 - **Error Handling**: Comprehensive error handling with retry mechanisms and user-friendly messages
@@ -122,7 +124,7 @@ npm run dev
 
 ## API Documentation
 
-### Endpoint: Get Merchant Summary
+### Endpoint: Get Seller Summary
 
 #### Request
 ```http
@@ -151,7 +153,7 @@ Accept: application/json
 {
   "status": 404,
   "error": "Not Found",
-  "message": "Merchant not found with id: 999",
+  "message": "Seller not found with id: 999",
   "timestamp": "2025-01-01T12:00:00",
   "path": "/api/seller/999/summary"
 }
@@ -205,10 +207,11 @@ The frontend automatically proxies `/api` requests to `http://localhost:8080`
    - Verify PostgreSQL is running
    - Confirm database credentials in `application.properties`
    - Ensure the database and user exist (see setup steps)
+   - If you get "permission denied for schema public" errors, run: `psql -d demo_db -U demo_user -c "GRANT CREATE ON SCHEMA public TO demo_user;"`
 
 3. **No Data Displayed**
    - Verify seed data was loaded: `psql -d demo_db -U demo_user -f backend/sellers.sql`
-   - The application expects merchant IDs 1-3 (see `frontend/src/api/services/merchantDataService.js`)
+   - The application expects seller IDs 1-3 (see `frontend/src/api/services/sellerDataService.js`)
 
 4. **Cache Not Working**
    - Check that `@EnableCaching` is present in `BackendApiApplication.java`
